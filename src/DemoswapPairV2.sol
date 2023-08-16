@@ -11,6 +11,8 @@ interface IERC20 {
 }
 
 error DemoswapPairV2__InsufficientLiquidityMinted();
+error DemoswapPairV2__InsufficientLiquidityBurned();
+error DemoswapPairV2__TransferFailed();
 
 contract DemoswapPairV2 is ERC20, Math{
 
@@ -25,8 +27,9 @@ contract DemoswapPairV2 is ERC20, Math{
     uint112 private reserve0;
     uint112 private reserve1;
 
-    event DemoswapPairV2__Mint(address indexed sender, uint256 amount0, uint256 amount1);
     event DemoswapPairV2__Sync(uint112 reserve0, uint112 reserve1);
+    event DemoswapPairV2__Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event DemoswapPairV2__Burn(address indexed sender, uint256 amount0, uint256 amount1);
     
     constructor (address _token0, address _token1) ERC20 (NAME, SYMBOL, DECIMALS){
         token0 = _token0;
@@ -63,6 +66,29 @@ contract DemoswapPairV2 is ERC20, Math{
         emit DemoswapPairV2__Mint(msg.sender, amount0, amount1);
     }
 
+    function burn() public {
+        uint256 balance0 = IERC20(token0).balanceOf(address(this));
+        uint256 balance1 = IERC20(token1).balanceOf(address(this));
+        uint256 liquidity = balanceOf[msg.sender];
+
+        uint256 amount0 = (liquidity * balance0) / totalSupply;
+        uint256 amount1 = (liquidity * balance1) / totalSupply;
+
+        if(amount0 <=0 || amount1 <=0) revert DemoswapPairV2__InsufficientLiquidityMinted();
+
+        _burn(msg.sender, liquidity);
+
+        _safeTransfer(token0, msg.sender, amount0);
+        _safeTransfer(token1, msg.sender, amount1);
+
+        balance0 = IERC20(token0).balanceOf(address(this));
+        balance1 = IERC20(token1).balanceOf(address(this));
+
+        _update(balance0, balance1);
+
+        emit DemoswapPairV2__Burn (msg.sender, amount0, amount1);
+    }
+
     function getReserves() public view 
         returns (
             uint112,
@@ -78,5 +104,17 @@ contract DemoswapPairV2 is ERC20, Math{
         reserve1 = uint112(balance1);
 
         emit DemoswapPairV2__Sync(reserve0, reserve1);
+    }
+
+    function _safeTransfer(
+        address token,
+        address to,
+        uint256 value
+    ) private {
+        (bool success, bytes memory data) = token.call(
+            abi.encodeWithSignature("transfer(address,uint256)", to, value)
+        );
+        if (!success || (data.length != 0 && !abi.decode(data, (bool))))
+            revert DemoswapPairV2__TransferFailed();
     }
 }

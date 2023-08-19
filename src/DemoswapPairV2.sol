@@ -10,23 +10,38 @@ interface IERC20 {
     function transfer(address to, uint256 amount) external;
 }
 
+//////////////////////////////////////////////////
+///////////////ERRORS/////////////////////////////
+//////////////////////////////////////////////////
 error DemoswapPairV2__InsufficientLiquidityMinted();
 error DemoswapPairV2__InsufficientLiquidityBurned();
 error DemoswapPairV2__TransferFailed();
 
 contract DemoswapPairV2 is ERC20, Math{
 
+    //////////////////////////////////////////////////
+    ///////////////CONSTANTS//////////////////////////
+    //////////////////////////////////////////////////
     string public constant NAME = "Demoswap LP Token";
     string public constant SYMBOL = "DSLP";
     uint8 public constant DECIMALS = 18;
     uint256 public constant MINIMUM_LIQUIDITY = 1000;
 
+    //////////////////////////////////////////////////
+    ///////////////IMMUTABLE//////////////////////////
+    //////////////////////////////////////////////////
     address public immutable token0;
     address public immutable token1;
 
+    //////////////////////////////////////////////////
+    ///////////////PRIVATE VARIABLES//////////////////
+    //////////////////////////////////////////////////
     uint112 private reserve0;
     uint112 private reserve1;
 
+    //////////////////////////////////////////////////
+    ///////////////EVENTS//////////////////////////
+    //////////////////////////////////////////////////
     event DemoswapPairV2__Sync(uint112 reserve0, uint112 reserve1);
     event DemoswapPairV2__Mint(address indexed sender, uint256 amount0, uint256 amount1);
     event DemoswapPairV2__Burn(address indexed sender, uint256 amount0, uint256 amount1);
@@ -36,6 +51,9 @@ contract DemoswapPairV2 is ERC20, Math{
         token1 = _token1;
     }
 
+    //////////////////////////////////////////////////
+    ///////////////EXTENRAL FUNCTIONS/////////////////
+    //////////////////////////////////////////////////
     function mint() external {
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves();
 
@@ -66,7 +84,10 @@ contract DemoswapPairV2 is ERC20, Math{
         emit DemoswapPairV2__Mint(msg.sender, amount0, amount1);
     }
 
-    function burn() public {
+    //////////////////////////////////////////////////
+    ///////////////EXTERNAL///////////////////////////
+    //////////////////////////////////////////////////
+    function burn() external {
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
         uint256 balance1 = IERC20(token1).balanceOf(address(this));
         uint256 liquidity = balanceOf[msg.sender];
@@ -89,6 +110,9 @@ contract DemoswapPairV2 is ERC20, Math{
         emit DemoswapPairV2__Burn (msg.sender, amount0, amount1);
     }
 
+    //////////////////////////////////////////////////
+    ///////////////PUBLIC AND VIEW FUCNTIONS//////////
+    //////////////////////////////////////////////////
     function getReserves() public view 
         returns (
             uint112,
@@ -99,6 +123,9 @@ contract DemoswapPairV2 is ERC20, Math{
         return (reserve0, reserve1, 0);
     }
 
+    //////////////////////////////////////////////////
+    ///////////////PRIVATE//////////////////////////
+    //////////////////////////////////////////////////
     function _update(uint256 balance0, uint256 balance1) private {
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
